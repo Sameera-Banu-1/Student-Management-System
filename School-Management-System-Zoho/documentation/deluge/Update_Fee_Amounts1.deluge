@@ -1,1 +1,40 @@
-
+void automation.Update_Fee_Amounts1(Int paymentId)
+{
+payment = zoho.crm.getRecordById("Payments",paymentId);
+feeLookup = payment.get("Fee");
+if(feeLookup != null)
+{
+	feeId = feeLookup.get("id");
+	paymentsList = zoho.crm.searchRecords("Payments","(Fee:equals:" + feeId + ")");
+	totalCollected = 0;
+	if(paymentsList != null)
+	{
+		for each  paymentRecord in paymentsList
+		{
+			amountPaid = ifnull(paymentRecord.get("Amount_Paid"),0);
+			totalCollected = totalCollected + amountPaid;
+		}
+	}
+	// Calculate outstanding amount
+	feeRecord = zoho.crm.getRecordById("Fees",feeId);
+	totalFees = ifnull(feeRecord.get("Total_Fees"),0);
+	outstandingAmount = totalFees - totalCollected;
+	// Determine payment status
+	PaymentStatus = "Pending";
+	if(totalCollected > 0 && outstandingAmount > 0)
+	{
+		PaymentStatus = "Partially Paid";
+	}
+	else if(outstandingAmount <= 0 && totalCollected > 0)
+	{
+		PaymentStatus = "Paid";
+	}
+	// Update Fee
+	updateMap = Map();
+	updateMap.put("Collected_Amount_Helper",totalCollected);
+	updateMap.put("Payment_Status",PaymentStatus);
+	updateResponse = zoho.crm.updateRecord("Fees",feeId,updateMap);
+	info updateResponse;
+	
+}
+}
